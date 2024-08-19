@@ -28,6 +28,8 @@ import org.springframework.security.web.authentication.www.BasicAuthenticationFi
 @RequiredArgsConstructor
 public class AppSecurityConfig {
 
+    private static final String[] WHITE_LISTED_APIS = {"/login", "/register", "/master/**"};
+
     /*
      * Security filter chain to configure the security
      * @param http HttpSecurity
@@ -40,7 +42,7 @@ public class AppSecurityConfig {
                 .addFilterAfter(new AuthoritiesLoggingAfterFilter(), BasicAuthenticationFilter.class)
                 .addFilterAt(new AuthoritiesLoggingAtFilter(), BasicAuthenticationFilter.class)
                 .authorizeHttpRequests((requests) -> requests
-                        .requestMatchers("/login", "/register").permitAll()
+                        .requestMatchers(WHITE_LISTED_APIS).permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement(sessionConfig -> sessionConfig.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(new JWTTokenValidatorFilter(), BasicAuthenticationFilter.class);
