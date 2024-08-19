@@ -18,6 +18,7 @@ import lombok.NoArgsConstructor;
 public class UserReq {
 
     @NotNull(message = "Please enter password")
+    @Pattern(regexp = ApplicationConstants.PASSWORD_REGEX, message = "Password should contain atleast 1 uppercase, 1 lowercase, 1 number, 1 special character and should be of minimum 8 characters")
     private String password;
 
     @NotNull(message = "Please enter email Id")

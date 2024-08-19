@@ -10,9 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * UserController
@@ -34,9 +32,34 @@ public class UserController {
         return ResponseEntity.status(HttpStatus.CREATED).body(userService.register(userReq));
     }
 
-    @PostMapping("/test")
-    public ResponseEntity<?> test(Authentication authentication) {
+    /**
+     * getUserInfo
+     * @param authentication
+     */
+    @GetMapping("/user")
+    public ResponseEntity<ApiResp<?>> getUserInfo(Authentication authentication) {
         UserSessionBean userSessionBean = (UserSessionBean) authentication.getDetails();
-        return ResponseEntity.ok(userSessionBean);
+        log.info("Email: {} -> Getting the user info", userSessionBean.getEmailId());
+        return ResponseEntity.ok(userService.getUserInfo(userSessionBean.getUserId(), userSessionBean.getEmailId()));
     }
+
+    /**
+     * getAllUserInfo
+     */
+    @GetMapping("/users")
+    public ResponseEntity<ApiResp<?>> getAllUserInfo() {
+        return ResponseEntity.ok(userService.getAllUserInfo());
+    }
+
+    /**
+     * updateUser
+     * @param authentication
+     */
+    @DeleteMapping("/user")
+    public ResponseEntity<ApiResp<?>> deleteUser(Authentication authentication) {
+        UserSessionBean userSessionBean = (UserSessionBean) authentication.getDetails();
+        log.info("Email: {} -> Deleting the user", userSessionBean.getEmailId());
+        return ResponseEntity.ok(userService.deleteUser(userSessionBean.getUserId(), userSessionBean.getEmailId()));
+    }
+
 }
