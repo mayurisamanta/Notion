@@ -71,3 +71,20 @@ VALUES ('Weekly Agenda Template',
         NOW(),
         10);
 
+CREATE TABLE document
+(
+    documentid INT AUTO_INCREMENT PRIMARY KEY,
+    title      VARCHAR(255) NOT NULL,
+    content    TEXT         NOT NULL,
+    xstatus    TINYINT      NOT NULL COMMENT '0: inactive, 1: active',
+    createdat  DATETIME     NOT NULL,
+    createdby  INT          NOT NULL COMMENT 'userid',
+    updatedat  DATETIME,
+    updatedby  INT,
+    parentid   INT,
+    templateid INT,
+    FOREIGN KEY (createdby) REFERENCES user (userid),
+    FOREIGN KEY (updatedby) REFERENCES user (userid),
+    FOREIGN KEY (parentid) REFERENCES document (documentid),
+    FOREIGN KEY (templateid) REFERENCES master_template (templateid)
+);

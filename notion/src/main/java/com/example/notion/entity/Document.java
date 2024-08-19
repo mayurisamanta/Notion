@@ -1,6 +1,6 @@
-package com.example.notion.master.entity;
+package com.example.notion.entity;
 
-import com.example.notion.entity.UserInfo;
+import com.example.notion.master.entity.MasterTemplate;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,18 +9,18 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
-@Entity(name = "MasterTemplate")
-@Table(name = "master_template")
+@Entity(name = "Document")
+@Table(name = "document")
 @Builder
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class MasterTemplate {
+public class Document {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "templateid")
-    private Integer templateId;
+    @Column(name = "documentid")
+    private Integer documentId;
 
     @Column(name = "title")
     private String title;
@@ -45,7 +45,13 @@ public class MasterTemplate {
     @JoinColumn(name = "updatedby")
     private UserInfo updatedBy;
 
-    public MasterTemplate(Integer templateId) {
-        this.templateId = templateId;
-    }
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parentid")
+    private Document parent;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "templateid")
+    private MasterTemplate masterTemplate;
+
+
 }
