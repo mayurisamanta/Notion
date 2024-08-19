@@ -3,43 +3,38 @@ package com.example.notion.controller;
 import com.example.notion.constants.ApplicationConstants;
 import com.example.notion.dto.ApiResp;
 import com.example.notion.dto.UserReq;
-import com.example.notion.dto.UserSessionBean;
 import com.example.notion.service.JwtService;
-import com.example.notion.service.UserService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * LoginController
+ */
 @RestController
 @RequiredArgsConstructor
+@Slf4j
 public class LoginController {
 
-    private final UserService userService;
     private final JwtService jwtService;
 
+    /**
+     * login
+     * @param userReq
+     */
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody UserReq userReq) {
-        return ResponseEntity.status(200).header(ApplicationConstants.JWT_HEADER, jwtService.generateToken(userReq))
-                .body(
-                        ApiResp
-                                .builder()
-                                .status(1)
-                                .message("Login Successful")
-                                .build());
+        log.info("Email: {} -> Login the user", userReq.getEmailId());
+        return ResponseEntity.status(HttpStatus.OK).header(ApplicationConstants.JWT_HEADER, jwtService.generateToken(userReq))
+                .body(ApiResp
+                        .builder()
+                        .status(HttpStatus.CREATED.value())
+                        .message("Login Successful")
+                        .build());
     }
 
-
-    @PostMapping("/register")
-    public ResponseEntity<ApiResp<?>> register(@RequestBody UserReq userReq) {
-        return ResponseEntity.ok(userService.register(userReq));
-    }
-
-    @PostMapping("/test")
-    public ResponseEntity<?> test(Authentication authentication) {
-        UserSessionBean userSessionBean = (UserSessionBean) authentication.getDetails();
-        return ResponseEntity.ok(userSessionBean);
-    }
 }

@@ -6,6 +6,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * UserReq for handling user request
+ */
 @Builder
 @Data
 @AllArgsConstructor

@@ -11,6 +11,9 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+/*
+ * Authentication provider to authenticate the user
+ */
 @Component
 @RequiredArgsConstructor
 public class AppAuthenticationProvider implements AuthenticationProvider {
@@ -19,6 +22,12 @@ public class AppAuthenticationProvider implements AuthenticationProvider {
 
     private final PasswordEncoder passwordEncoder;
 
+    /*
+     * Authenticate the user
+     * @param authentication Authentication
+     * @return Authentication
+     * @throws AuthenticationException
+     */
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
         String username = authentication.getName();
@@ -31,6 +40,11 @@ public class AppAuthenticationProvider implements AuthenticationProvider {
         }
     }
 
+    /*
+     * Check if the authentication is supported
+     * @param authentication Class<?>
+     * @return boolean
+     */
     @Override
     public boolean supports(Class<?> authentication) {
         return (UsernamePasswordAuthenticationToken.class.isAssignableFrom(authentication));

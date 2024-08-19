@@ -20,14 +20,18 @@ import javax.crypto.SecretKey;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import java.util.Objects;
 
+/**
+ * This filter is used to validate the JWT token received in the request header
+ */
 public class JWTTokenValidatorFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
         String jwt = request.getHeader(ApplicationConstants.JWT_HEADER);
-        if (null != jwt) {
+        if (Objects.nonNull(jwt)) {
             try {
                 Environment env = getEnvironment();
                 String secret = env.getProperty(ApplicationConstants.JWT_SECRET_KEY,

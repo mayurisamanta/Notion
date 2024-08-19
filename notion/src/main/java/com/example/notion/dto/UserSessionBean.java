@@ -5,6 +5,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * UserSessionBean for handling user session
+ */
 @Builder
 @Data
 @AllArgsConstructor
