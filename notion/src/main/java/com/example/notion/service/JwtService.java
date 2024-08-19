@@ -52,7 +52,7 @@ public class JwtService {
             Authentication authenticationResponse = authenticationManager.authenticate(authentication);
             log.info("Email: {} -> authenticationResponse: {}", emailId, authenticationResponse);
 
-            Optional<UserInfo> userInfoOpt = userRepository.findByEmailId(userReq.getEmailId());
+            Optional<UserInfo> userInfoOpt = userRepository.findByEmailIdAndStatus(userReq.getEmailId(), (byte) 1);
 
             if (userInfoOpt.isPresent() && Objects.nonNull(authenticationResponse) && authenticationResponse.isAuthenticated()) {
                 if (Objects.nonNull(env)) {

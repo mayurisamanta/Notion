@@ -4,6 +4,7 @@ import com.example.notion.constants.ApplicationConstants;
 import com.example.notion.dto.ApiResp;
 import com.example.notion.dto.UserReq;
 import com.example.notion.service.JwtService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -27,7 +28,7 @@ public class LoginController {
      * @param userReq
      */
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody UserReq userReq) {
+    public ResponseEntity<?> login(@Valid @RequestBody UserReq userReq) {
         log.info("Email: {} -> Login the user", userReq.getEmailId());
         return ResponseEntity.status(HttpStatus.OK).header(ApplicationConstants.JWT_HEADER, jwtService.generateToken(userReq))
                 .body(ApiResp

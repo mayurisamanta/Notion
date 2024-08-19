@@ -34,7 +34,7 @@ public class UserService {
 
         String emailId = userReq.getEmailId();
 
-        userRepository.findByEmailId(userReq.getEmailId()).ifPresent(user -> {
+        userRepository.findByEmailIdAndStatus(userReq.getEmailId(), (byte) 1).ifPresent(user -> {
             log.error("Email: {} -> User already exists", emailId);
             throw new UserException("User already exists with the email id: " + emailId);
         });
@@ -47,7 +47,7 @@ public class UserService {
                     .emailId(userReq.getEmailId())
                     .username(userReq.getEmailId())
                     .createdAt(LocalDateTime.now())
-                    .xStatus((byte) 1) // 1 is active
+                    .status((byte) 1) // 1 is active
                     .build();
 
             log.info("Email: {} -> Going to save the user: {}", emailId, user);

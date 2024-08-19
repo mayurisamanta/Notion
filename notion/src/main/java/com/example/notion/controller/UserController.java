@@ -4,6 +4,7 @@ import com.example.notion.dto.ApiResp;
 import com.example.notion.dto.UserReq;
 import com.example.notion.dto.UserSessionBean;
 import com.example.notion.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -28,7 +29,7 @@ public class UserController {
      * @param userReq
      */
     @PostMapping("/register")
-    public ResponseEntity<ApiResp<?>> register(@RequestBody UserReq userReq) {
+    public ResponseEntity<ApiResp<?>> register(@Valid @RequestBody UserReq userReq) {
         log.info("Email: {} -> Registering the user", userReq.getEmailId());
         return ResponseEntity.status(HttpStatus.CREATED).body(userService.register(userReq));
     }

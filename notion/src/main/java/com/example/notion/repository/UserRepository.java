@@ -11,10 +11,10 @@ import java.util.Optional;
 public interface UserRepository extends JpaRepository<UserInfo, Integer> {
 
     /**
-     * Find user by email id
+     * Find user by email id and xStatus
      *
      * @param emailId email id
      * @return user info
      */
-    Optional<UserInfo> findByEmailId(String emailId);
+    Optional<UserInfo> findByEmailIdAndStatus(String emailId, Byte xStatus);
 }

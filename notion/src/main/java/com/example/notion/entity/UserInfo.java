@@ -27,7 +27,7 @@ public class UserInfo {
     private String emailId;
 
     @Column(name = "xstatus")
-    private Byte xStatus;
+    private Byte status;
 
     @Column(name = "lastloginat")
     private LocalDateTime lastLoginAt;
