@@ -102,3 +102,19 @@ CREATE TABLE document_history
     FOREIGN KEY (createdby) REFERENCES user (userid)
 );
 
+CREATE TABLE document_upload
+(
+    documentuploadid INT AUTO_INCREMENT PRIMARY KEY,
+    documentname     VARCHAR(255)   NOT NULL,
+    documenttype     VARCHAR(100)   NOT NULL,
+    documentpath     VARCHAR(255)   NOT NULL,
+    documentsize     DECIMAL(15, 2) NOT NULL,
+    xstatus          TINYINT        NOT NULL COMMENT '0: inactive, 1: active',
+    documentid       INT            NOT NULL,
+    uploadedat       DATETIME       NOT NULL,
+    uploadedby       INT            NOT NULL,
+    FOREIGN KEY (documentid) REFERENCES document (documentid),
+    FOREIGN KEY (uploadedby) REFERENCES user (userid)
+);
+
+
