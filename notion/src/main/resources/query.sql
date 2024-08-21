@@ -88,3 +88,17 @@ CREATE TABLE document
     FOREIGN KEY (parentid) REFERENCES document (documentid),
     FOREIGN KEY (templateid) REFERENCES master_template (templateid)
 );
+
+CREATE TABLE document_history
+(
+    documenthistoryid INT AUTO_INCREMENT PRIMARY KEY,
+    title             VARCHAR(255) NOT NULL,
+    content           TEXT         NOT NULL,
+    documentid        INT          NOT NULL,
+    createdat         DATETIME     NOT NULL,
+    createdby         INT          NOT NULL,
+    version           INT          NOT NULL,
+    FOREIGN KEY (documentid) REFERENCES document (documentid),
+    FOREIGN KEY (createdby) REFERENCES user (userid)
+);
+

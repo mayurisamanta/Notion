@@ -58,5 +58,12 @@ public class DocumentController {
         return ResponseEntity.ok(documentService.deleteDocument(documentId, userSessionBean));
     }
 
+    @GetMapping("/document/{documentId}/{version}")
+    public ResponseEntity<ApiResp<?>> getDocumentVersion(@PathVariable Integer documentId, @PathVariable Integer version, Authentication authentication) {
+        UserSessionBean userSessionBean = (UserSessionBean) authentication.getDetails();
+        log.info("Email: {}, DocumentId: {} Fetching the Document for last {} version -> Fetching the document", userSessionBean.getEmailId(), documentId, version);
+        return ResponseEntity.ok(documentService.getDocumentVersion(documentId, version, userSessionBean));
+    }
+
 
 }

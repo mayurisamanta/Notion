@@ -2,15 +2,20 @@ package com.example.notion.service.impl;
 
 import com.example.notion.dto.*;
 import com.example.notion.entity.Document;
+import com.example.notion.entity.DocumentHistory;
 import com.example.notion.entity.UserInfo;
 import com.example.notion.exception.DocumentException;
 import com.example.notion.master.dto.TemplateResp;
 import com.example.notion.master.entity.MasterTemplate;
+import com.example.notion.repository.DocumentHistoryRepository;
 import com.example.notion.repository.DocumentRepository;
 import com.example.notion.service.DocumentService;
 import com.example.notion.service.UserService;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -29,12 +34,15 @@ public class DocumentServiceImpl implements DocumentService {
 
     private final UserService userService;
 
+    private final DocumentHistoryRepository documentHistoryRepository;
+
     /**
      * Create a document
      *
      * @param documentReq
      * @param userSessionBean
      */
+    @Transactional
     @Override
     public ApiResp<?> createDocument(CreateDocumentReq documentReq, UserSessionBean userSessionBean) {
 
@@ -81,8 +89,21 @@ public class DocumentServiceImpl implements DocumentService {
                 .masterTemplate(documentReq.getTemplateId() != null ? new MasterTemplate(documentReq.getTemplateId()) : null)
                 .build();
 
+
         log.info("Email: {} -> Creating the document: {}", userInfo.getEmailId(), document);
-        documentRepository.save(document);
+        document = documentRepository.save(document);
+
+        DocumentHistory documentHistory = DocumentHistory.builder()
+                .title(documentReq.getTitle())
+                .content(documentReq.getContent())
+                .document(document)
+                .createdBy(userInfo)
+                .createdAt(LocalDateTime.now())
+                .version(documentHistoryRepository.findLastVersionByDocument(document).orElse(0) + 1)
+                .build();
+
+        log.info("Email: {} -> Creating the document history: {}", userInfo.getEmailId(), documentHistory);
+        documentHistoryRepository.save(documentHistory);
 
         if (documentReq.getChildDocuments() != null) {
             for (CreateDocumentReq childDocumentReq : documentReq.getChildDocuments()) {
@@ -98,6 +119,7 @@ public class DocumentServiceImpl implements DocumentService {
      * @param documentReq
      * @param userSessionBean
      */
+    @Transactional
     @Override
     public ApiResp<?> updateDocument(List<UpdateDocumentReq> documentReq, UserSessionBean userSessionBean) {
 
@@ -127,8 +149,21 @@ public class DocumentServiceImpl implements DocumentService {
                 document.setUpdatedBy(userInfo);
                 document.setUpdatedAt(LocalDateTime.now());
                 document.setStatus((byte) 1); // Active
+
+                DocumentHistory documentHistory = DocumentHistory.builder()
+                        .title(document.getTitle())
+                        .content(document.getContent())
+                        .document(document)
+                        .createdBy(userInfo)
+                        .createdAt(LocalDateTime.now())
+                        .version(documentHistoryRepository.findLastVersionByDocument(document).orElse(0) + 1)
+                        .build();
+
                 log.info("Email: {}, DocumentId: {} -> Updated the document: {}", emailId, documentId, document);
                 documentRepository.save(document);
+
+                log.info("Email: {}, DocumentId: {} -> Created the document history: {}", emailId, documentId, documentHistory);
+                documentHistoryRepository.save(documentHistory);
             }
 
             return ApiResp.builder()
@@ -212,6 +247,7 @@ public class DocumentServiceImpl implements DocumentService {
      * @param documentId
      * @param userSessionBean
      */
+    @Transactional
     @Override
     public ApiResp<?> deleteDocument(Integer documentId, UserSessionBean userSessionBean) {
 
@@ -255,6 +291,54 @@ public class DocumentServiceImpl implements DocumentService {
         } catch (Exception e) {
             log.error("Email: {} -> Error while deleting the document", userInfo.getEmailId(), e);
             throw new DocumentException("Error while deleting the document");
+        }
+
+    }
+
+    /**
+     * Get the document version
+     *
+     * @param documentId
+     * @param version
+     * @param userSessionBean
+     */
+    @Override
+    public ApiResp<?> getDocumentVersion(Integer documentId, Integer version, UserSessionBean userSessionBean) {
+
+        String emailId = userSessionBean.getEmailId();
+
+        Document document = documentRepository.findById(documentId)
+                .orElseThrow(() -> new DocumentException("Document not found"));
+
+        try {
+            log.info("Email: {}, DocumentId: {} -> Found the document: {}", emailId, documentId, document);
+            Pageable pageable = PageRequest.of(0, version);
+            List<DocumentHistory> documentHistory = documentHistoryRepository.findByDocumentOrderByVersionDesc(document, pageable);
+
+            List<DocumentResp> documentResp = new ArrayList<>();
+            for (DocumentHistory history : documentHistory) {
+                documentResp.add(DocumentResp.builder()
+                        .documentId(history.getDocument().getDocumentId())
+                        .title(history.getTitle())
+                        .content(history.getContent())
+                        .template(history.getDocument().getMasterTemplate() != null ? TemplateResp.builder()
+                                .templateId(history.getDocument().getMasterTemplate().getTemplateId())
+                                .title(history.getDocument().getMasterTemplate().getTitle())
+                                .content(history.getDocument().getMasterTemplate().getContent())
+                                .build() : null)
+                        .build());
+            }
+
+            return ApiResp.builder()
+                    .status(200)
+                    .message("Document version retrieved successfully")
+                    .data(documentResp)
+                    .build();
+        } catch (DocumentException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Email: {} -> Error while getting the document version", emailId, e);
+            throw new DocumentException("Error while getting the document version");
         }
 
     }

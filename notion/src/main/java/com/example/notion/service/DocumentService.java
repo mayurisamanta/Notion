@@ -16,4 +16,6 @@ public interface DocumentService {
     ApiResp<?> getDocument(Integer documentId, UserSessionBean userSessionBean);
 
     ApiResp<?> deleteDocument(Integer documentId, UserSessionBean userSessionBean);
+
+    ApiResp<?> getDocumentVersion(Integer documentId, Integer version, UserSessionBean userSessionBean);
 }
