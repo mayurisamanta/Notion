@@ -11,7 +11,10 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class DocumentReq {
+public class UpdateDocumentReq {
+
+    @NotNull(message = "Please enter documentId")
+    private Integer documentId;
 
     @NotNull(message = "Please enter title")
     @Size(min = 1, max = 255, message = "Title should be between 1 to 255 characters")
@@ -23,6 +26,4 @@ public class DocumentReq {
     private Integer templateId;
 
     private Integer parentId;
-
-    private DocumentReq parentDocument;
 }

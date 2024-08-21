@@ -31,6 +31,20 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * handle DocumentException
+     *
+     * @param documentException
+     */
+    @ExceptionHandler(DocumentException.class)
+    public ApiResp<?> handleDocumentException(DocumentException documentException) {
+        return ApiResp.<String>builder()
+                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                .error("Document Related Error")
+                .message(documentException.getMessage())
+                .build();
+    }
+
+    /**
      * handle MethodArgumentNotValidException
      *
      * @param methodArgumentNotValidException

@@ -1,11 +1,10 @@
 package com.example.notion.service.impl;
 
-import com.example.notion.dto.ApiResp;
-import com.example.notion.dto.DocumentReq;
-import com.example.notion.dto.UserSessionBean;
+import com.example.notion.dto.*;
 import com.example.notion.entity.Document;
 import com.example.notion.entity.UserInfo;
 import com.example.notion.exception.DocumentException;
+import com.example.notion.master.dto.TemplateResp;
 import com.example.notion.master.entity.MasterTemplate;
 import com.example.notion.repository.DocumentRepository;
 import com.example.notion.service.DocumentService;
@@ -15,6 +14,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Implementation of Document related operations
@@ -35,18 +36,26 @@ public class DocumentServiceImpl implements DocumentService {
      * @param userSessionBean
      */
     @Override
-    public ApiResp<?> createDocument(DocumentReq documentReq, UserSessionBean userSessionBean) {
+    public ApiResp<?> createDocument(CreateDocumentReq documentReq, UserSessionBean userSessionBean) {
 
         String emailId = userSessionBean.getEmailId();
         UserInfo userInfo = userService.getUserInfoByEmail(emailId);
 
         try {
-            createDocumentRecursively(documentReq, documentReq.getParentId(), userInfo);
+            Document parent = null;
+            if (documentReq.getParentId() != null) {
+                parent = documentRepository.findByDocumentIdAndStatus(documentReq
+                                .getParentId(), (byte) 1)
+                        .orElseThrow(() -> new DocumentException("Parent document not found"));
+            }
+            createDocumentRecursively(documentReq, parent, userInfo);
 
             return ApiResp.builder()
                     .status(200)
                     .message("Document created successfully")
                     .build();
+        } catch (DocumentException e) {
+            throw e;
         } catch (Exception e) {
             log.error("Email: {} -> Error while creating the document", emailId, e);
             throw new DocumentException("Error while creating the document");
@@ -58,28 +67,195 @@ public class DocumentServiceImpl implements DocumentService {
      * Create the document recursively
      *
      * @param documentReq
-     * @param parentId
+     * @param parent
      * @param userInfo
      */
-    private Document createDocumentRecursively(DocumentReq documentReq, Integer parentId, UserInfo userInfo) {
-        log.info("Email: {} -> Creating the document recursively: {}", userInfo.getEmailId(), documentReq);
-        if (documentReq == null && parentId == null) return null;
+    private void createDocumentRecursively(CreateDocumentReq documentReq, Document parent, UserInfo userInfo) {
+        Document document = Document.builder()
+                .title(documentReq.getTitle())
+                .content(documentReq.getContent())
+                .status((byte) 1) // Active
+                .createdBy(userInfo)
+                .createdAt(LocalDateTime.now())
+                .parent(parent)
+                .masterTemplate(documentReq.getTemplateId() != null ? new MasterTemplate(documentReq.getTemplateId()) : null)
+                .build();
 
-        if (documentReq == null) {
-            return documentRepository.findById(parentId).orElse(null);
+        log.info("Email: {} -> Creating the document: {}", userInfo.getEmailId(), document);
+        documentRepository.save(document);
+
+        if (documentReq.getChildDocuments() != null) {
+            for (CreateDocumentReq childDocumentReq : documentReq.getChildDocuments()) {
+                createDocumentRecursively(childDocumentReq, document, userInfo);
+            }
         }
 
-        Document parent = createDocumentRecursively(documentReq.getParentDocument(), documentReq.getParentId(), userInfo);
+    }
 
-        log.info("Email: {} -> Parent document: {}", userInfo.getEmailId(), parent);
-        Document document = new Document();
-        document.setParent(parent);
-        document.setTitle(documentReq.getTitle());
-        document.setContent(documentReq.getContent());
-        document.setCreatedBy(userInfo);
-        document.setCreatedAt(LocalDateTime.now());
-        document.setMasterTemplate(documentReq.getTemplateId() != null ? new MasterTemplate(documentReq.getTemplateId()) : null);
-        document.setStatus((byte) 1); // Active
-        return documentRepository.save(document);
+    /**
+     * Update the document
+     *
+     * @param documentReq
+     * @param userSessionBean
+     */
+    @Override
+    public ApiResp<?> updateDocument(List<UpdateDocumentReq> documentReq, UserSessionBean userSessionBean) {
+
+        String emailId = userSessionBean.getEmailId();
+        UserInfo userInfo = userService.getUserInfoByEmail(emailId);
+
+        try {
+            for (UpdateDocumentReq updateDocumentReq : documentReq) {
+                Integer documentId = updateDocumentReq.getDocumentId();
+                log.info("Email: {}, DocumentId: {} -> Going to update the document", emailId, documentId);
+                Document document = documentRepository.findByDocumentIdAndStatus(updateDocumentReq.getDocumentId(), (byte) 1)
+                        .orElseThrow(() -> new DocumentException("Document not found"));
+
+                log.info("Email: {}, DocumentId: {} -> Found the document: {}", emailId, documentId, document);
+                Document parent = null;
+                if (updateDocumentReq.getParentId() != null) {
+                    parent = documentRepository.findByDocumentIdAndStatus(updateDocumentReq
+                                    .getParentId(), (byte) 1)
+                            .orElseThrow(() -> new DocumentException("Parent document not found"));
+
+                    log.info("Email: {}, DocumentId: {} -> Found the parent document: {}", emailId, documentId, parent);
+                }
+                document.setTitle(updateDocumentReq.getTitle());
+                document.setContent(updateDocumentReq.getContent());
+                document.setMasterTemplate(updateDocumentReq.getTemplateId() != null ? new MasterTemplate(updateDocumentReq.getTemplateId()) : null);
+                document.setParent(parent);
+                document.setUpdatedBy(userInfo);
+                document.setUpdatedAt(LocalDateTime.now());
+                document.setStatus((byte) 1); // Active
+                log.info("Email: {}, DocumentId: {} -> Updated the document: {}", emailId, documentId, document);
+                documentRepository.save(document);
+            }
+
+            return ApiResp.builder()
+                    .status(200)
+                    .message("Document updated successfully")
+                    .build();
+        } catch (DocumentException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Email: {} -> Error while updating the document", emailId, e);
+            throw new DocumentException("Error while updating the document");
+        }
+    }
+
+    /**
+     * Get the document
+     *
+     * @param documentId
+     * @param userSessionBean
+     */
+    @Override
+    public ApiResp<?> getDocument(Integer documentId, UserSessionBean userSessionBean) {
+
+        String emailId = userSessionBean.getEmailId();
+
+        DocumentResp documentResp = getDocumentRecursively(documentId, emailId);
+        log.info("Email: {}, DocumentId: {} -> Retrieved the document: {}", emailId, documentId, documentResp);
+
+        return ApiResp.builder()
+                .status(200)
+                .message("Document retrieved successfully")
+                .data(documentResp)
+                .build();
+
+    }
+
+    /**
+     * Get the document recursively
+     *
+     * @param documentId
+     * @param emailId
+     */
+    private DocumentResp getDocumentRecursively(Integer documentId, String emailId) {
+
+        Document document = documentRepository.findByDocumentIdAndStatus(documentId, (byte) 1)
+                .orElseThrow(() -> new DocumentException("Document not found"));
+
+        try {
+            log.info("Email: {}, DocumentId: {} -> Found the document: {}", emailId, documentId, document);
+            DocumentResp documentResp = DocumentResp.builder()
+                    .documentId(document.getDocumentId())
+                    .title(document.getTitle())
+                    .content(document.getContent())
+                    .template(document.getMasterTemplate() != null ? TemplateResp.builder()
+                            .templateId(document.getMasterTemplate().getTemplateId())
+                            .title(document.getMasterTemplate().getTitle())
+                            .content(document.getMasterTemplate().getContent())
+                            .build() : null)
+                    .childDocument(new ArrayList<>())
+                    .build();
+
+            List<Document> childDocuments = documentRepository.findByParentAndStatus(document, (byte) 1);
+            log.info("Email: {}, DocumentId: {} -> Found the child documents: {}", emailId, documentId, childDocuments);
+            if (childDocuments != null && !childDocuments.isEmpty()) {
+                for (Document childDocument : childDocuments) {
+                    documentResp.getChildDocument().add(getDocumentRecursively(childDocument.getDocumentId(), emailId));
+                }
+            }
+
+            return documentResp;
+        } catch (Exception e) {
+            log.error("Email: {} -> Error while getting the document", emailId, e);
+            throw new DocumentException("Error while getting the document");
+        }
+
+    }
+
+    /**
+     * Delete the document
+     *
+     * @param documentId
+     * @param userSessionBean
+     */
+    @Override
+    public ApiResp<?> deleteDocument(Integer documentId, UserSessionBean userSessionBean) {
+
+        String emailId = userSessionBean.getEmailId();
+        UserInfo userInfo = userService.getUserInfoByEmail(emailId);
+
+        deleteDocumentRecursively(documentId, userInfo);
+
+        return ApiResp.builder()
+                .status(200)
+                .message("Document deleted successfully")
+                .build();
+
+    }
+
+    /**
+     * Delete the document recursively
+     *
+     * @param documentId
+     * @param userInfo
+     */
+    private void deleteDocumentRecursively(Integer documentId, UserInfo userInfo) {
+        log.info("Email: {}, DocumentId: {} -> Going to delete the document", userInfo.getEmailId(), documentId);
+        Document document = documentRepository.findByDocumentIdAndStatus(documentId, (byte) 1)
+                .orElseThrow(() -> new DocumentException("Document not found"));
+
+        try {
+            log.info("Email: {}, DocumentId: {} -> Found the document: {}", userInfo.getEmailId(), documentId, document);
+            document.setStatus((byte) 0); // Inactive
+            document.setUpdatedBy(userInfo);
+            document.setUpdatedAt(LocalDateTime.now());
+            documentRepository.save(document);
+
+            List<Document> childDocuments = documentRepository.findByParentAndStatus(document, (byte) 1);
+            log.info("Email: {}, DocumentId: {} -> Found the child documents: {}", userInfo.getEmailId(), documentId, childDocuments);
+            if (childDocuments != null && !childDocuments.isEmpty()) {
+                for (Document childDocument : childDocuments) {
+                    deleteDocumentRecursively(childDocument.getDocumentId(), userInfo);
+                }
+            }
+        } catch (Exception e) {
+            log.error("Email: {} -> Error while deleting the document", userInfo.getEmailId(), e);
+            throw new DocumentException("Error while deleting the document");
+        }
+
     }
 }
